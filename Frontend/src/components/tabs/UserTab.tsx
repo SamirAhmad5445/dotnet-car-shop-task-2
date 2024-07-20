@@ -1,10 +1,5 @@
 import React, { useState, useEffect, type FormEvent } from "react";
-
-interface User {
-  username: string;
-  firstName: string;
-  lastName: string;
-}
+import type { User } from "../../utils/types";
 
 const UserTab: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -12,32 +7,36 @@ const UserTab: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch("https://localhost:7160/api/user/all", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        });
-
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-
-        const data: User[] = await response.json();
-        setUsers(data);
-      } catch (e) {
-        console.log(e);
-        setError("Oops, Something went wrong.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
+
+  async function fetchUsers() {
+    try {
+      const response = await fetch("https://localhost:7160/api/user/all", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Network response was not ok");
+      }
+
+      const data: User[] = await response.json();
+      setUsers(data);
+    } catch (e) {
+      console.log(e);
+      setError("Oops, Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function updateUsers() {
+    fetchUsers();
+  }
 
   if (loading) {
     return <div>Loading...</div>;
@@ -53,11 +52,13 @@ const UserTab: React.FC = () => {
         Here all users of our app.
       </h1>
       <table className="grid gap-2">
-        <tr className="grid grid-cols-3 rounded-xl bg-slate-800 px-4 py-3">
-          <tr>Username</tr>
-          <tr>First Name</tr>
-          <tr>Last Name</tr>
-        </tr>
+        <thead>
+          <tr className="grid grid-cols-3 rounded-xl bg-slate-800 px-4 py-3">
+            <td>Username</td>
+            <td>First Name</td>
+            <td>Last Name</td>
+          </tr>
+        </thead>
         <tbody
           className="grid gap-2 divide-y divide-indigo-300"
           id="recommendation"
@@ -71,12 +72,16 @@ const UserTab: React.FC = () => {
           ))}
         </tbody>
       </table>
-      <AddUserForm />
+      <AddUserForm updateUsers={updateUsers} />
     </>
   );
 };
 
-const AddUserForm: React.FC = () => {
+interface AddUserFormProps {
+  updateUsers: Function;
+}
+
+const AddUserForm: React.FC<AddUserFormProps> = ({ updateUsers }) => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [username, setUsername] = useState<string>("");
   const [firstName, setFirstName] = useState<string>("");
@@ -91,7 +96,7 @@ const AddUserForm: React.FC = () => {
 
     try {
       const response = await fetch("https://localhost:7160/api/user/add", {
-        method: "GET",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
@@ -104,7 +109,7 @@ const AddUserForm: React.FC = () => {
       }
 
       const data: string = await response.text();
-      alert(data);
+      updateUsers();
     } catch (e) {
       console.error(e);
     }
