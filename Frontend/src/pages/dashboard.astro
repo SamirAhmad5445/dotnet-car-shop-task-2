@@ -1,0 +1,14 @@
+---
+import DashboardApp from "../components/DashboardApp";
+import DashboardLayout from "../layouts/DashboardLayout.astro";
+const username = Astro.cookies.get("username")?.value!;
+const role = Astro.cookies.get("role")?.value;
+
+if (role !== "admin") {
+  return Astro.redirect("/");
+}
+---
+
+<DashboardLayout title="Admin Dashboard">
+  <DashboardApp client:only="react" adminUsername={username} />
+</DashboardLayout>

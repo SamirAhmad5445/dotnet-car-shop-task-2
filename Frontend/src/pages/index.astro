@@ -1,0 +1,10 @@
+---
+import LoginForm from "../components/LoginForm";
+import CenteredLayout from "../layouts/CenteredLayout.astro";
+---
+
+<CenteredLayout title="Welcome to Car Shop">
+  <h1>Welcome to Car Shop</h1>
+  <p>Please enter your username to login.</p>
+  <LoginForm client:only="react" accountType="user" />
+</CenteredLayout>

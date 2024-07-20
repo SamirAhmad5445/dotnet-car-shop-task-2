@@ -1,0 +1,15 @@
+---
+import Layout from "./Layout.astro";
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+---
+
+<Layout {title}>
+  <main class="grid min-h-svh place-content-center p-4">
+    <slot />
+  </main>
+</Layout>

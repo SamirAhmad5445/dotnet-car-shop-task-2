@@ -1,0 +1,101 @@
+---
+import Container from "../layouts/Container.astro";
+import Layout from "../layouts/Layout.astro";
+
+const username = Astro.cookies.get("username")?.value;
+const role = Astro.cookies.get("role")?.value;
+
+if (role !== "user") {
+  return Astro.redirect("/");
+}
+---
+
+<Layout title=`Welcome, ${username}.`>
+  <Container>
+    <h1 class="mb-8 text-3xl font-medium text-indigo-200">
+      Welcome, <span id="user-first-name">loading...</span>
+      <span id="user-last-name"></span>
+    </h1>
+    <h2 class="mb-4 text-xl text-indigo-200">
+      Here a list of cars you may like:
+    </h2>
+    <table class="grid gap-2">
+      <tr class="grid grid-cols-4 rounded-xl bg-slate-800 px-4 py-3">
+        <tr>Car Name</tr>
+        <tr>Model Number</tr>
+        <tr>Color</tr>
+        <tr>Fuel Type</tr>
+      </tr>
+
+      <tbody class="grid gap-2 divide-y divide-indigo-300" id="recommendation">
+        <tr class="mx-2 grid grid-cols-4 px-2 py-3">
+          <td>Loading the data...</td>
+        </tr>
+      </tbody>
+    </table>
+  </Container>
+</Layout>
+
+<script>
+  const firstNameSpan = document.getElementById(
+    "user-first-name"
+  ) as HTMLSpanElement;
+  const lastNameSpan = document.getElementById(
+    "user-last-name"
+  ) as HTMLSpanElement;
+  const carsTable = document.getElementById(
+    "recommendation"
+  ) as HTMLTableSectionElement;
+
+  window.onload = async () => {
+    const { firstName, lastName } = await fetchUser();
+
+    firstNameSpan.innerText = firstName;
+    lastNameSpan.innerText = lastName;
+
+    const cars = await fetchCarsList();
+    createTable(cars);
+  };
+
+  async function fetchUser() {
+    const response = await fetch("https://localhost:7160/api/user/info", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+    });
+    return response.json();
+  }
+
+  async function fetchCarsList() {
+    const response = await fetch(
+      "https://localhost:7160/api/user/recommended",
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      }
+    );
+    return response.json();
+  }
+
+  function createTable(cars: any) {
+    carsTable.innerHTML = "";
+
+    for (const car of cars) {
+      const row = `
+       <tr class="grid grid-cols-4 px-2 py-3 mx-2">
+          <td>${car.name}</td>
+          <td>${car.modelNumber}</td>
+          <td>${car.color}</td>
+          <td>${car.type}</td>
+        </tr>
+      `;
+
+      carsTable.innerHTML += row;
+    }
+  }
+</script>
