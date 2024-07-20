@@ -42,15 +42,18 @@ const LoginForm: React.FC<LoginFormProps> = ({ accountType }) => {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form
+      onSubmit={handleSubmit}
+      className="flex items-center justify-center gap-4"
+    >
       <input
-        className="text-slate-900"
+        className="flex-1 rounded-lg border border-indigo-200 bg-transparent px-4 py-2 caret-indigo-400 outline-0 focus:border-indigo-400"
         type="text"
-        placeholder="e.g. john"
+        placeholder="e.g. roger"
         value={username}
         onChange={handleInput}
       />
-      <button>Login</button>
+      <button className="rounded-md bg-indigo-500 px-4 py-2">Login</button>
     </form>
   );
 };

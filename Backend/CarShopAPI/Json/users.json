@@ -11,7 +11,7 @@
 		"Username": "zoro",
 		"FirstName": "Roronoa",
 		"LastName": "Zoro",
-		"RecommendedCars": [ 1, 2, 4 ]
+		"RecommendedCars": [ 3 ]
 	},
 	{
 		"Id": 2,

@@ -4,7 +4,9 @@ import CenteredLayout from "../layouts/CenteredLayout.astro";
 ---
 
 <CenteredLayout title="Welcome to Car Shop">
-  <h1>Welcome to Car Shop</h1>
-  <p>Please enter your username to login.</p>
+  <h1 class="my-2 text-3xl font-medium text-indigo-200">Welcome to Car Shop</h1>
+  <p class="mb-8 text-2xl font-medium text-indigo-200">
+    Please enter your username to login.
+  </p>
   <LoginForm client:only="react" accountType="admin" />
 </CenteredLayout>

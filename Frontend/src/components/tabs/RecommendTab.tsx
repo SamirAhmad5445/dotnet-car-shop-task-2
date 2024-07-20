@@ -1,10 +1,16 @@
-import React, { useState, useEffect, type FormEvent } from "react";
+import React, {
+  useState,
+  useEffect,
+  type FormEvent,
+  type ChangeEvent,
+} from "react";
 import type { Car, Recommendation, User } from "../../utils/types";
 
 const RecommendTab: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [cars, setCars] = useState<Car[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>("");
+  const [selectedCars, setSelectedCars] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +67,44 @@ const RecommendTab: React.FC = () => {
     }
   }
 
+  async function addRecommendation() {
+    if (!selectedCars.length || !selectedUser) {
+      return;
+    }
+
+    try {
+      const recommendation: Recommendation = {
+        username: selectedUser,
+        recommendedCars: selectedCars,
+      };
+
+      const response = await fetch("https://localhost:7160/api/recommend", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(recommendation),
+      });
+
+      const data = await response.text();
+      setSelectedUser("");
+      setSelectedCars([]);
+    } catch (e) {
+      console.log(e);
+      setError("Oops, Something went wrong.");
+    }
+  }
+
+  function handleSelection(e: ChangeEvent, index: number) {
+    if (!(e.target as HTMLInputElement).checked) {
+      setSelectedCars(selectedCars.filter((n) => n !== index));
+      return;
+    }
+
+    setSelectedCars([...selectedCars, index]);
+  }
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -68,6 +112,7 @@ const RecommendTab: React.FC = () => {
   if (error) {
     return <div>Error: {error}</div>;
   }
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -89,6 +134,52 @@ const RecommendTab: React.FC = () => {
             </option>
           ))}
         </select>
+      </div>
+
+      <section>
+        <table className="grid gap-2">
+          <thead>
+            <tr className="grid grid-cols-[80px_repeat(4,1fr)] rounded-xl bg-slate-800 px-4 py-3">
+              <td>Check</td>
+              <td>Car Name</td>
+              <td>Model Number</td>
+              <td>Color</td>
+              <td>Type</td>
+            </tr>
+          </thead>
+          <tbody
+            className="grid gap-2 divide-y divide-indigo-300"
+            id="recommendation"
+          >
+            {cars.map((car, index) => (
+              <tr
+                className="mx-2 grid grid-cols-[80px_repeat(4,1fr)] px-2 py-3"
+                key={index}
+              >
+                <td>
+                  <input
+                    type="checkbox"
+                    onChange={(e) => handleSelection(e, index)}
+                  />
+                </td>
+                <td>{car.name}</td>
+                <td>{car.modelNumber}</td>
+                <td>{car.color}</td>
+                <td>{car.type}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <div className="flex items-center justify-end">
+        <button
+          type="button"
+          onClick={addRecommendation}
+          className={`block rounded-md px-4 py-2 ${selectedCars.length && selectedUser ? "bg-indigo-500" : "cursor-not-allowed bg-indigo-200 text-indigo-500"}`}
+        >
+          Add Recommendation
+        </button>
       </div>
     </>
   );
