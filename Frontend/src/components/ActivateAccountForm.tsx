@@ -35,7 +35,7 @@ const ActivateAccountForm = () => {
         setError(message);
       }
 
-      location.href = getRoute("user", true);
+      location.replace(getRoute("user", true));
     } catch (e) {
       console.error(e);
     }
