@@ -37,6 +37,8 @@ if (role !== "user") {
 </Layout>
 
 <script>
+  import type { Car } from "../utils/types";
+
   const firstNameSpan = document.getElementById(
     "user-first-name"
   ) as HTMLSpanElement;
@@ -54,6 +56,7 @@ if (role !== "user") {
     lastNameSpan.innerText = lastName;
 
     const cars = await fetchCarsList();
+
     createTable(cars);
   };
 
@@ -65,6 +68,7 @@ if (role !== "user") {
       },
       credentials: "include",
     });
+
     return response.json();
   }
 
@@ -79,11 +83,20 @@ if (role !== "user") {
         credentials: "include",
       }
     );
-    return response.json();
+
+    return (await response.json()) as Car[];
   }
 
-  function createTable(cars: any) {
+  function createTable(cars: Car[]) {
     carsTable.innerHTML = "";
+
+    if (!cars.length) {
+      carsTable.innerHTML = `
+        <tr class="mx-2 grid px-2 py-3">
+          <td>No recommendations were found.</td>
+        </tr>
+      `;
+    }
 
     for (const car of cars) {
       const row = `

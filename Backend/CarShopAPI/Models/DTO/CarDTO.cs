@@ -1,6 +1,6 @@
 ﻿namespace CarShopAPI.Models.DTO
 {
-  public class CarRequestDTO
+  public class CarDTO
   {
     public required string Name { get; set; }
     public required int ModelNumber { get; set; }

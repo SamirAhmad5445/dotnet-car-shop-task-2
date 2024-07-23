@@ -1,8 +1,7 @@
-const routes = {
-  user: "/app",
-  admin: "/dashboard",
-};
+export const getRoute = (role: "user" | "admin", isActive: boolean): string => {
+  if (role === "user") {
+    return isActive ? "/app" : "/activation";
+  }
 
-export const getRoute = (accountType: "user" | "admin"): string => {
-  return routes[accountType];
+  return "/dashboard";
 };

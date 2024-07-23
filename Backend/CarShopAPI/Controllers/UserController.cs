@@ -1,74 +1,128 @@
-﻿using CarShopAPI.Helpers;
+﻿using Azure.Core;
+using CarShopAPI.Data;
+using CarShopAPI.Helpers;
 using CarShopAPI.Model;
 using CarShopAPI.Models.DTO;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace CarShopAPI.Controllers
 {
   [Route("api")]
   [ApiController]
   [LoggedOnly]
-  public class UserController : ControllerBase
+  public class UserController(DatabaseContext db) : ControllerBase
   {
     [HttpGet("user/info")]
-    public ActionResult<UserRequestDTO> GetUserInfo()
+    public ActionResult<UserDTO> GetUserInfo()
     {
-      var Username = Request.Cookies["username"]!;
+      string Username = Request.Cookies["username"]!;
 
-      if (Username == null || Username == string.Empty)
+      if (Username == string.Empty)
       {
         return BadRequest("Invalid username.");
       }
 
-      User? User = Utils.GetUser(Username);
+      User? User = db.Users.FirstOrDefault(u => u.Username == Username);
 
       if (User == null)
       {
-        return NotFound("User doesn't exist.");
+        return NotFound("User is not found.");
       }
 
-      return Ok(new UserRequestDTO() {
+      if (!User.IsActive)
+      {
+        return Unauthorized("Please activate the account by changing your default password.");
+      }
+
+      return Ok(new UserDTO()
+      {
         Username = User.Username,
+        FirstName = User.FirstName,
         LastName = User.LastName,
-        FirstName = User.FirstName
+        IsActive = User.IsActive
       });
     }
 
     [HttpGet("user/recommended")]
-    public ActionResult<List<CarRequestDTO>> GetRecommendedCars()
+    public ActionResult<List<CarDTO>> GetRecommendedCars()
     {
-      var Username = Request.Cookies["username"]!;
+      string Username = Request.Cookies["username"]!;
 
-      if (Username == null || Username == string.Empty)
+      if (Username == string.Empty)
       {
         return BadRequest("Invalid username.");
       }
 
-      User? User = Utils.GetUser(Username);
+      var User = db.Users
+        .Include(u => u.RecommendedCars)
+        .SingleOrDefault(u => u.Username == Username);
 
       if (User == null)
       {
         return NotFound("User doesn't exist.");
       }
 
-      List<CarRequestDTO> RecommendedCars = [];
-
-      foreach(int id in User.RecommendedCars)
+      if (!User.IsActive)
       {
-        Car? Car = Utils.GetCar(id);
-        if (Car != null)
+        return Unauthorized("Please activate the account by changing your default password.");
+      }
+
+      List<CarDTO> RecommendedCars = [];
+
+      foreach (Car Car in User.RecommendedCars!)
+      {
+        RecommendedCars.Add(new CarDTO()
         {
-          RecommendedCars.Add(new CarRequestDTO()
-          {
-            Name = Car.Name,
-            ModelNumber = Car.ModelNumber,
-            Color = Car.Color,
-            Type = Car.Type,
-          });
-        }
+          Name = Car.Name,
+          ModelNumber = Car.ModelNumber,
+          Color = Car.Color,
+          Type = Car.Type,
+        });
       }
 
       return Ok(RecommendedCars);
+    }
+
+    [HttpPut("user/activate")]
+    public ActionResult<string> ActivateAccount([FromBody]string NewPassword)
+    {
+      string Username = Request.Cookies["username"]!;
+
+      if (Username == string.Empty)
+      {
+        return BadRequest("Invalid username.");
+      }
+
+      User? User = db.Users.FirstOrDefault(u => u.Username == Username);
+
+      if (User == null)
+      {
+        return NotFound("User doesn't exist.");
+      }
+
+      if (User.IsActive)
+      {
+        return Conflict("Your account has been activated before.");
+      }
+
+      if (NewPassword == null || NewPassword == string.Empty || NewPassword.Length < 8)
+      {
+        return BadRequest("Invalide password, please enter another pasword to activate the account.");
+      }
+
+      if (User.VerifyPassword(NewPassword))
+      {
+        return BadRequest("Your new password can't be the old password");
+      }
+
+      User.UpdatePassword(NewPassword);
+      User.IsActive = true;
+
+      db.Users.Update(User);
+      db.SaveChanges();
+
+      return Ok("Your account has been activated.");
     }
   }
 }

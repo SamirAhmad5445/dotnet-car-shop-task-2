@@ -1,52 +1,49 @@
-﻿using CarShopAPI.Helpers;
+﻿using CarShopAPI.Data;
+using CarShopAPI.Helpers;
 using CarShopAPI.Model;
+using CarShopAPI.Models.DTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CarShopAPI.Controllers
 {
   [Route("api")]
   [ApiController]
-  public class AuthController : ControllerBase
+  public class AuthController(DatabaseContext db) : ControllerBase
   {
-    [HttpPost("login/user")]
-    public ActionResult<string> UserLogin([FromBody]string Username)
+    [HttpPost("login")]
+    public ActionResult<LoginResponseDTO> UserLogin(LoginRequestDTO request)
     {
-      if (Username == null || Username == string.Empty)
+      if (request.Username == null || request.Username == string.Empty)
       {
-        return BadRequest("Invalid username.");
+        return BadRequest("Username is required to login.");
       }
 
-      User? User = Utils.GetUser(Username);
-
-      if (User == null)
+      if (request.Password == null || request.Password == string.Empty)
       {
-        CreateCookie("", "");
-        return NotFound("Username doesn't exist.");
+        return BadRequest("A password is required to login.");
       }
 
-      CreateCookie(Username, "user");
-      return Ok($"Welcome, {User.Username}");
+      User? User = db.Users.FirstOrDefault(u => u.Username == request.Username);
+
+      if (User == null || !User!.VerifyPassword(request.Password))
+      {
+        DeleteCookies();
+        return BadRequest("Invalid username or password.");
+      }
+
+      string Role = User.IsAdmin ? "admin" : "user";
+      var response = new LoginResponseDTO
+      {
+        Username = User.Username,
+        Role = Role,
+        IsActive = User.IsActive
+      };
+
+      CreateCookies(User.Username, Role);
+      return Ok(response);
     }
 
-    [HttpPost("login/admin")]
-    public ActionResult<string> AdminLogin([FromBody]string Username)
-    {
-      if (Username == null || Username == string.Empty)
-      {
-        return BadRequest("Invalid username.");
-      }
-
-      if (Username != Utils.GetAdminUser().Username)
-      {
-        CreateCookie("", "");
-        return Unauthorized("Invalid admin user.");
-      }
-
-      CreateCookie(Username, "admin");
-      return Ok($"Welcome, {Utils.GetAdminUser().Username} (admin).");
-    }
-
-    private void CreateCookie(string Username, string Role)
+    private void CreateCookies(string Username, string Role)
     {
       var CookieOpt = new CookieOptions()
       {
@@ -57,6 +54,12 @@ namespace CarShopAPI.Controllers
 
       Response.Cookies.Append("username", Username, CookieOpt);
       Response.Cookies.Append("role", Role, CookieOpt);
+    }
+
+    private void DeleteCookies()
+    {
+      Response.Cookies.Delete("username");
+      Response.Cookies.Delete("role");
     }
   }
 }

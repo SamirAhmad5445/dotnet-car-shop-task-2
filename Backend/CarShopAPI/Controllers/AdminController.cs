@@ -1,132 +1,209 @@
-﻿using CarShopAPI.Helpers;
+﻿using CarShopAPI.Data;
 using CarShopAPI.Model;
 using CarShopAPI.Models.DTO;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+using Microsoft.EntityFrameworkCore;
+using CarShopAPI.Helpers;
+
 
 namespace CarShopAPI.Controllers
 {
   [Route("api")]
   [ApiController]
-  [Administrator]
-  public class AdminController : ControllerBase
+  [LoggedOnly]
+  public class AdminController(DatabaseContext db) : ControllerBase
   {
     [HttpGet("user/all")]
-    public ActionResult<List<User>> GetAllUsers()
+    public ActionResult<List<UserDTO>> GetAllUsers()
     {
-      return Ok(Utils.GetAllUsers());
+      if(!IsAdmin())
+      {
+        return Unauthorized("your access has been denied.");
+      }
+
+      List<User> Users = [.. db.Users];
+      List<UserDTO> response = [];
+
+      foreach(User u in Users)
+      {
+        if (u.IsAdmin) {
+          continue;
+        }
+
+        response.Add(new UserDTO()
+        {
+          Username = u.Username,
+          FirstName = u.FirstName,
+          LastName = u.LastName,
+          IsActive = u.IsActive
+        });
+      }
+
+      return Ok(response);
     }
 
     [HttpPost("user/add")]
-    public ActionResult<string> AddUser(UserRequestDTO request)
+    public ActionResult<string> AddUser(AddUserDTO request)
     {
+      if (!IsAdmin())
+      {
+        return Unauthorized("your access has been denied.");
+      }
+
       if (request.Username == null || request.Username == string.Empty)
       {
-        return BadRequest("Invalid username.");
+        return BadRequest("Expecting username for creating new user.");
       }
 
       if (request.FirstName == null || request.FirstName == string.Empty)
       {
-        return BadRequest("Invalid user first name.");
+        return BadRequest("Expecting first name for the new user.");
       }
 
       if (request.LastName == null || request.LastName == string.Empty)
       {
-        return BadRequest("Invalid user last name.");
+        return BadRequest("Expecting last name for the new user.");
       }
 
-      if(Utils.GetUser(request.Username) != null)
+      if (request.Password == null || request.Password == string.Empty || request.Password.Length < 6)
       {
-        return Conflict("Username is already taken.");
+        return BadRequest("Expecting password for creating new user.");
       }
 
-      List<User> Users = Utils.GetAllUsers();
-      Users.Add(new User()
+      User? User = db.Users.FirstOrDefault(u => u.Username == request.Username);
+
+      if (User != null)
       {
-        Id = Users.Count,
-        Username = request.Username,
-        FirstName = request.FirstName,
-        LastName = request.LastName,
-        RecommendedCars = []
-      });
+        return Conflict("Username is already exist.");
+      }
 
-      System.IO.File.WriteAllText("Json/users.json", JsonConvert.SerializeObject(Users));
+      User NewUser = new(request.Username, request.FirstName, request.LastName, request.Password);
 
+      db.Users.Add(NewUser);
+      db.SaveChanges();
       return Ok("New user added successfully.");
     }
 
     [HttpGet("car/all")]
-    public ActionResult<List<Car>> GetAllCars()
+    public ActionResult<List<CarDTO>> GetAllCars()
     {
-      return Ok(Utils.GetAllCars());
+      if (!IsAdmin())
+      {
+        return Unauthorized("your access has been denied.");
+      }
+
+      List<Car> Cars = [.. db.Cars];
+      List<CarDTO> response = [];
+
+      foreach (Car c in Cars)
+      {
+        response.Add(new CarDTO()
+        {
+          Name = c.Name,
+          ModelNumber = c.ModelNumber,
+          Color = c.Color,
+          Type = c.Type
+        });
+      }
+
+      return Ok(response);
     }
 
     [HttpPost("car/add")]
-    public ActionResult<string> AddCar(CarRequestDTO request)
+    public ActionResult<string> AddCar(CarDTO request)
     {
-      if (request.Name == null || request.Name == string.Empty)
+      if (!IsAdmin())
       {
-        return BadRequest("Invalid car name.");
+        return Unauthorized("your access has been denied.");
       }
 
-      if (request.ModelNumber == null || request.ModelNumber > DateTime.Now.Year)
+      if (request.Name == null || request.Name == string.Empty)
       {
-        return BadRequest("Invalid car name.");
+        return BadRequest("Expecting name for creating new car.");
+      }
+
+      if (request.ModelNumber > DateTime.Now.Year)
+      {
+        return BadRequest("Expecting model number for the new car.");
       }
 
       if (request.Color == null || request.Color == string.Empty)
       {
-        return BadRequest("Invalid car color.");
+        return BadRequest("Expecting color for the new car.");
       }
 
       if (request.Type == null || request.Type == string.Empty)
       {
-        return BadRequest("Invalid car type.");
+        return BadRequest("Expecting type for the new car.");
       }
 
-      if (Utils.GetCarByName(request.Name) != null)
-      {
-        return Conflict("The car already exists.");
+      Car NewCar = new(request.Name, request.ModelNumber, request.Color, request.Type);
 
-      }
-
-      List<Car> Cars = Utils.GetAllCars();
-      Cars.Add(new Car()
-      {
-        Id = Cars.Count,
-        Name = request.Name,
-        ModelNumber = request.ModelNumber,
-        Color = request.Color,
-        Type = request.Type,
-      });
-
-      Utils.UpdateCarsFile(Cars);
+      db.Cars.Add(NewCar);
+      db.SaveChanges();
       return Ok("New Car added successfully");
     }
 
     [HttpPost("recommend")]
     public ActionResult<string> Recommend(RecommendRequestDTO request)
     {
-      if (Utils.GetUser(request.Username) == null)
+      if (!IsAdmin())
       {
-        return BadRequest("Invalid username.");
+        return Unauthorized("your access has been denied.");
+      }
+
+      if (request.Username == null || request.Username == string.Empty)
+      {
+        return BadRequest("Expecting username to make a reacommendation.");
       }
 
       if (request.RecommendedCars == null || request.RecommendedCars.Count == 0)
       {
-        return BadRequest("Invalid recommendation array.");
+        return BadRequest("Expecting recommendation array.");
       }
 
-      List<int> RecommendedCars = request.RecommendedCars;
-      RecommendedCars.RemoveAll(c => c < 0 || c > Utils.GetAllCars().Count);
+      var User = db.Users
+        .Include(u => u.RecommendedCars)
+        .SingleOrDefault(u => u.Username == request.Username);
 
-      HashSet<int> CarsSet = new HashSet<int>(RecommendedCars);
 
-      List<User> Users = Utils.GetAllUsers();
-      Users.Find(u => u.Username == request.Username)!.RecommendedCars = CarsSet.ToList();
+      if (User == null)
+      {
+        return NotFound("User is not found.");
+      }
 
-      Utils.UpdateUsersFile(Users);
+      List<Car> RecommendedCars = [.. db.Cars.Where(c => request.RecommendedCars.Contains(c.Id))];
+
+      User.RecommendedCars!.Clear();
+      User.RecommendedCars.AddRange(RecommendedCars);
+
+      db.SaveChanges();
       return Ok("The Recommendation added successfully");
+    }
+
+    private bool IsAdmin()
+    {
+      string? Username = Request.Cookies["username"];
+      string? Role = Request.Cookies["role"];
+
+      if (Username == null || Username == string.Empty)
+      {
+        return false;
+      }
+
+      if (Role == null || Role == string.Empty)
+      {
+        return false;
+      }
+
+      User? User = db.Users.SingleOrDefault(u => u.Username == Username);
+
+      if (User == null)
+      {
+        return false;
+      }
+
+      return Role == "admin" && User.IsAdmin;
     }
   }
 }
