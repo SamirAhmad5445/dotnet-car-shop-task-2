@@ -17,7 +17,7 @@ namespace CarShopAPI.Data
 
       modelBuilder.Entity<User>()
         .HasData(
-            new User(1, "captain", "Samir", "Ahmad", "captain123", true),
+            new User(1, "captain", "Samir", "Ahmad", "c@p12345", true),
             new User(2, "luffy", "Monkey D.", "Luffy", "pass1234", false),
             new User(3, "zoro", "Roronoa", "Zoro", "pass1234", false),
             new User(4, "sanji", "Vinsmoke", "Sanji", "pass1234", false),
