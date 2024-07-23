@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CarShopAPI.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    [Migration("20240722012750_UpdateCar")]
-    partial class UpdateCar
+    [Migration("20240723161517_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -89,19 +89,6 @@ namespace CarShopAPI.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            FirstName = "Samir",
-                            IsActive = false,
-                            IsAdmin = true,
-                            LastName = "Ahmed",
-                            PasswordHash = new byte[] { 82, 128, 75, 158, 129, 50, 217, 137, 119, 125, 50, 144, 202, 196, 197, 240, 69, 108, 120, 231, 164, 249, 231, 251, 78, 44, 39, 210, 48, 230, 171, 90, 212, 227, 120, 36, 255, 186, 52, 185, 3, 20, 134, 39, 108, 112, 117, 54, 230, 129, 247, 93, 16, 110, 150, 135, 189, 129, 85, 111, 87, 223, 103, 119 },
-                            PasswordSalt = new byte[] { 159, 134, 235, 107, 130, 65, 91, 246, 11, 108, 109, 141, 124, 250, 76, 75, 91, 223, 172, 242, 21, 60, 254, 203, 124, 50, 4, 68, 218, 172, 91, 248, 88, 129, 73, 19, 123, 98, 186, 247, 93, 212, 16, 129, 227, 136, 175, 69, 138, 32, 42, 108, 45, 196, 221, 43, 196, 34, 249, 26, 93, 38, 123, 96, 64, 155, 230, 62, 195, 178, 34, 182, 228, 113, 172, 120, 111, 168, 148, 106, 113, 19, 48, 104, 184, 25, 144, 77, 86, 96, 180, 1, 193, 236, 89, 251, 39, 40, 118, 17, 136, 72, 176, 60, 1, 82, 106, 244, 151, 124, 44, 213, 241, 180, 141, 208, 117, 216, 57, 223, 159, 92, 209, 229, 5, 108, 23, 209 },
-                            Username = "captain"
-                        });
                 });
 
             modelBuilder.Entity("CarUser", b =>

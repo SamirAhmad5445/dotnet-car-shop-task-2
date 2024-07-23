@@ -41,7 +41,6 @@ namespace CarShopAPI.Model
     
     public User(string Username, string FirstName, string LastName, string Password)
     {
-      this.Id = Id;
       this.Username = Username;
       this.FirstName = FirstName;
       this.LastName = LastName;

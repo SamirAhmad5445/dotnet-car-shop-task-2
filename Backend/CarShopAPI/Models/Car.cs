@@ -17,6 +17,15 @@
       Type = type;
     }
 
+    public Car(int id, string name, int modelNumber, string color, string type)
+    {
+      Id = id;
+      Name = name;
+      ModelNumber = modelNumber;
+      Color = color;
+      Type = type;
+    }
+
     public Car(int id, string name, int modelNumber, string color, string type, List<User> users)
     {
       Id = id;
