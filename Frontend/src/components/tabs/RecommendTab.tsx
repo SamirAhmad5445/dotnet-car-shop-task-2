@@ -1,10 +1,6 @@
-import React, {
-  useState,
-  useEffect,
-  type FormEvent,
-  type ChangeEvent,
-} from "react";
+import React, { useState, useEffect, type ChangeEvent } from "react";
 import type { Car, Recommendation, User } from "../../utils/types";
+import ErrorMessage from "../ErrorMessage";
 
 const RecommendTab: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -13,6 +9,7 @@ const RecommendTab: React.FC = () => {
   const [selectedCars, setSelectedCars] = useState<number[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
     fetchUsers();
@@ -30,7 +27,7 @@ const RecommendTab: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        setMessage(await response.text());
       }
 
       const data: User[] = await response.json();
@@ -54,7 +51,7 @@ const RecommendTab: React.FC = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        setMessage(await response.text());
       }
 
       const data: Car[] = await response.json();
@@ -87,9 +84,10 @@ const RecommendTab: React.FC = () => {
         body: JSON.stringify(recommendation),
       });
 
-      const data = await response.text();
-      setSelectedUser("");
-      setSelectedCars([]);
+      if (!response.ok) {
+        setMessage(await response.text());
+      }
+      reset();
     } catch (e) {
       console.log(e);
       setError("Oops, Something went wrong.");
@@ -103,6 +101,16 @@ const RecommendTab: React.FC = () => {
     }
 
     setSelectedCars([...selectedCars, index]);
+  }
+
+  function reset() {
+    setSelectedUser("");
+    setSelectedCars([]);
+    setMessage("");
+
+    document
+      .querySelectorAll("input[type='checkbox']")
+      .forEach((checkbox: any) => (checkbox.checked = false));
   }
 
   if (loading) {
@@ -125,9 +133,7 @@ const RecommendTab: React.FC = () => {
           onChange={(e) => setSelectedUser(e.target.value)}
           className="min-w-52 rounded-lg border-4 border-slate-900 bg-slate-900 p-2"
         >
-          <option value="" selected>
-            Select User
-          </option>
+          <option>Select User</option>
           {users.map((user, index) => (
             <option key={index} value={user.username}>
               {user.username}
@@ -159,6 +165,7 @@ const RecommendTab: React.FC = () => {
                 <td>
                   <input
                     type="checkbox"
+                    className="size-5 cursor-pointer"
                     onChange={(e) => handleSelection(e, index)}
                   />
                 </td>
@@ -172,7 +179,12 @@ const RecommendTab: React.FC = () => {
         </table>
       </section>
 
-      <div className="flex items-center justify-end">
+      <div className="flex items-center">
+        <div className="mr-auto grid w-96">
+          {message && (
+            <ErrorMessage message={message} onClear={() => setMessage("")} />
+          )}
+        </div>
         <button
           type="button"
           onClick={addRecommendation}

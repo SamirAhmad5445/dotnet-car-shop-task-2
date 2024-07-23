@@ -1,5 +1,6 @@
 import React, { useState, useEffect, type FormEvent } from "react";
 import type { Car, Fuel } from "../../utils/types";
+import ErrorMessage from "../ErrorMessage";
 
 const CarsTab: React.FC = () => {
   const [cars, setCars] = useState<Car[]>([]);
@@ -49,7 +50,7 @@ const CarsTab: React.FC = () => {
   return (
     <>
       <h1 className="mb-8 px-2 text-3xl font-medium text-indigo-200">
-        Here all cars in out shop.
+        Here all cars in our shop.
       </h1>
       <table className="grid gap-2">
         <thead>
@@ -89,6 +90,7 @@ const AddCarForm: React.FC<AddCarFormProps> = ({ updateCars }) => {
   const [modelNumber, setModelNumber] = useState<number>(0);
   const [color, setColor] = useState<string>("");
   const [type, setType] = useState<Fuel>("Gas");
+  const [message, setMessage] = useState<string>("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -108,14 +110,22 @@ const AddCarForm: React.FC<AddCarFormProps> = ({ updateCars }) => {
       });
 
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        setMessage(await response.text());
       }
 
-      const data: string = await response.text();
+      resetForm();
       updateCars();
     } catch (e) {
       console.error(e);
     }
+  }
+
+  function resetForm() {
+    setName("");
+    setModelNumber(0);
+    setColor("");
+    setType("Gas");
+    setMessage("");
   }
 
   return (
@@ -160,7 +170,12 @@ const AddCarForm: React.FC<AddCarFormProps> = ({ updateCars }) => {
           </select>
         </div>
       )}
-      <div className="flex justify-end gap-4 p-4">
+      <div className="flex items-center gap-4 p-4">
+        <div className="mr-auto grid w-96">
+          {message && (
+            <ErrorMessage message={message} onClear={() => setMessage("")} />
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setIsOpen((is) => !is)}

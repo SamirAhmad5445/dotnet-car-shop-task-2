@@ -1,5 +1,6 @@
 import React, { useState, useEffect, type FormEvent } from "react";
 import type { User } from "../../utils/types";
+import ErrorMessage from "../ErrorMessage";
 
 const UserTab: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
@@ -53,10 +54,11 @@ const UserTab: React.FC = () => {
       </h1>
       <table className="grid gap-2">
         <thead>
-          <tr className="grid grid-cols-3 rounded-xl bg-slate-800 px-4 py-3">
+          <tr className="grid grid-cols-4 rounded-xl bg-slate-800 px-4 py-3">
             <td>Username</td>
             <td>First Name</td>
             <td>Last Name</td>
+            <td className="text-center">Is Activated</td>
           </tr>
         </thead>
         <tbody
@@ -64,10 +66,17 @@ const UserTab: React.FC = () => {
           id="recommendation"
         >
           {users.map((user) => (
-            <tr className="mx-2 grid grid-cols-3 px-2 py-3" key={user.username}>
+            <tr className="mx-2 grid grid-cols-4 px-2 py-3" key={user.username}>
               <td>{user.username}</td>
               <td>{user.firstName}</td>
               <td>{user.lastName}</td>
+              <td className="text-center">
+                {user.isActive ? (
+                  <span className="text-green-400">yes</span>
+                ) : (
+                  <span className="text-red-600">No</span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -86,11 +95,13 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ updateUsers }) => {
   const [username, setUsername] = useState<string>("");
   const [firstName, setFirstName] = useState<string>("");
   const [lastName, setLastName] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
 
-    if (!username || !firstName || !lastName) {
+    if (!username || !firstName || !lastName || password.length < 8) {
       return;
     }
 
@@ -101,28 +112,36 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ updateUsers }) => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ username, firstName, lastName }),
+        body: JSON.stringify({ username, firstName, lastName, password }),
       });
 
       if (!response.ok) {
-        throw new Error("Network response was not ok");
+        setMessage(await response.text());
       }
 
-      const data: string = await response.text();
+      resetForm();
       updateUsers();
     } catch (e) {
       console.error(e);
     }
   }
 
+  function resetForm() {
+    setUsername("");
+    setFirstName("");
+    setLastName("");
+    setPassword("");
+    setMessage("");
+  }
+
   return (
     <form className="py-4" onSubmit={handleSubmit}>
       {isOpen && (
-        <div className="grid grid-cols-3 gap-4 rounded-xl bg-slate-900 px-4 py-3">
+        <div className="grid grid-cols-4 gap-4 rounded-xl bg-slate-900 px-4 py-3">
           <input
             required
             type="text"
-            placeholder="e.g. pirateking"
+            placeholder="e.g. gold"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             className="rounded-lg border border-indigo-200 bg-transparent px-4 py-2 caret-indigo-400 outline-0 focus:border-indigo-400"
@@ -143,9 +162,22 @@ const AddUserForm: React.FC<AddUserFormProps> = ({ updateUsers }) => {
             onChange={(e) => setLastName(e.target.value)}
             className="rounded-lg border border-indigo-200 bg-transparent px-4 py-2 caret-indigo-400 outline-0 focus:border-indigo-400"
           />
+          <input
+            required
+            type="text"
+            placeholder="default: pass1234"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="rounded-lg border border-indigo-200 bg-transparent px-4 py-2 caret-indigo-400 outline-0 focus:border-indigo-400"
+          />
         </div>
       )}
-      <div className="flex justify-end gap-4 p-4">
+      <div className="flex items-center gap-4 p-4">
+        <div className="mr-auto grid w-96">
+          {message && (
+            <ErrorMessage message={message} onClear={() => setMessage("")} />
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setIsOpen((is) => !is)}
